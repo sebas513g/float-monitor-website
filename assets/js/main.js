@@ -58,6 +58,40 @@
   }
 
   /**
+   * Search Functionality
+   */
+ const ticker = document.getElementById("ticker")
+ const form = document.getElementById("ticker_value")
+
+ form.addEventListener("submit", function(e){
+    e.preventDefault()
+    let searchInput = document.getElementById("ticker_search").value
+    let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
+
+    fetch(url).then(data => {
+          console.log(data)
+    })
+
+    ticker.textContent = searchInput
+    console.log("Hello! ", searchInput)
+ });
+
+` input.addEventListener("ticker_search", getInput);
+`
+//  function getInput(e) {
+//   // let ticker_value = document.getElementById("ticker_search").value;
+//   // let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + ticker_value;
+  
+//   // fetch(url).then(data => {
+//   //   console.log(data)
+//   // });
+//   e.preventDefault();
+//   window.location = "http://www.google.com/search/" + input.value;
+//   val.textContent = e.target.value;
+//   //console.log("Ticker searched!");
+//  }
+
+  /**
    * Navbar links active state on scroll
    */
   let navbarlinks = select('#navbar .scrollto', true)

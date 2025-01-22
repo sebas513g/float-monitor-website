@@ -52,9 +52,9 @@
     </div><!-- End Logo -->
 
     <div class="search-bar">
-      <form class="search-form d-flex align-items-center" method="POST" action="#">
-        <input type="text" name="query" placeholder="Search" title="Enter search keyword">
-        <button type="submit" title="Search"><i class="bi bi-search"></i></button>
+      <form id="ticker_value" class="search-form d-flex align-items-center" method="POST">
+        <input type="text" id="ticker_search" name="ticker" placeholder="Search Ticker (i.e. AAPL, TSLA)" title="Enter ticker">
+        <button title="ticker-search"><i class="bi bi-search"></i></button>
       </form>
     </div><!-- End Search Bar -->
 
@@ -550,7 +550,7 @@
                       <i class="bi bi-cart"></i>
                     </div>
                     <div class="ps-3">
-                      <h6>145</h6>
+                      <p id="ticker">145</p>
                       <span class="text-success small pt-1 fw-bold">12%</span> <span class="text-muted small pt-2 ps-1">increase</span>
 
                     </div>
