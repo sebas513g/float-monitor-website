@@ -68,8 +68,7 @@
     let headers = new Headers()
 
     headers.append('Content-Type', 'application/json')
-    //headers.append('Accept', 'application/json')  
-    headers.append('Access-Control-Allow-Origin', 'http://floatmonitor.com')
+    headers.append('Accept', 'application/json')  
     headers.append('GET', 'POST');
     let searchInput = document.getElementById("ticker_search").value
     let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
