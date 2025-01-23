@@ -72,10 +72,7 @@
     let searchInput = document.getElementById("ticker_search").value
     let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
 
-    fetch(url, {
-      headers: headers, 
-      method: 'POST'
-    }).then(data => {
+    fetch(url).then(data => {
           console.log(data)
     })
 
