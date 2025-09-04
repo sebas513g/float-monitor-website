@@ -57,6 +57,252 @@
     })
   }
 
+
+  const elMsg   = document.getElementById("result-message");
+  const elFloat = document.getElementById("tbl-float");
+  const elOff   = document.getElementById("tbl-offerings");
+  const elWick  = document.getElementById("tbl-wick");
+  const elGap   = document.getElementById("tbl-gap");
+
+  // --- helpers ---
+  function parsePayload(apiResp) {
+    // Your backend returns: { body: "<big json string>" }
+    const body = apiResp?.body;
+    if (typeof body === "string") return JSON.parse(body);
+    if (typeof body === "object") return body;
+    return apiResp; // fallback
+  }
+
+  function columnarToRows(columnar, { idKey = "row_id" } = {}) {
+    const cols = Object.keys(columnar || {});
+    const ids = new Set();
+    cols.forEach(c => Object.keys(columnar[c] || {}).forEach(id => ids.add(id)));
+    const sorted = [...ids].sort((a,b) =>
+      (isFinite(+a) && isFinite(+b)) ? (+a - +b) : (a > b ? 1 : -1)
+    );
+    return sorted.map(id => {
+      const row = { [idKey]: id };
+      cols.forEach(c => row[c] = columnar[c]?.[id] ?? null);
+      return row;
+    });
+  }
+
+  function renderTable(el, rows, columns) {
+    if (!el) return;
+    if (!rows?.length) {
+      el.innerHTML = "<thead><tr><th>—</th></tr></thead><tbody><tr><td>No data</td></tr></tbody>";
+      return;
+    }
+    const safe = v => (v ?? "") + "";
+    const fmtNum = v => (typeof v === "number"
+      ? v.toLocaleString(undefined, { maximumFractionDigits: Number.isInteger(v) ? 0 : 6 })
+      : safe(v)
+    );
+
+    const thead = `<thead><tr>${columns.map(c => `<th>${c}</th>`).join("")}</tr></thead>`;
+    const tbody = `<tbody>${
+      rows.map(r => `<tr>${columns.map(c => `<td>${fmtNum(r[c])}</td>`).join("")}</tr>`).join("")
+    }</tbody>`;
+    el.innerHTML = thead + tbody;
+  }
+
+  function renderAll(data) {
+    // Header/message
+    elMsg.textContent = data?.message || "";
+
+    // Float data is already row-like ({"0": {source, float}, ...})
+    const floatRows = Object.values(data?.float_data || {});
+    renderTable(elFloat, floatRows.map(r => ({ Source: r.source, Float: r.float })), ["Source", "Float"]);
+
+    // Offerings are columnar → rows
+    // const offRows = columnarToRows(data?.offerings || {}, { idKey: "row" }).map(r => ({
+    //   filingDate: r.filingDate, form: r.form, accessionNumber: r.accessionNumber,
+    //   fileNumber: r.fileNumber, primaryDocument: r.primaryDocument,
+    //   primaryDocDescription: r.primaryDocDescription, size: Number(r.size) || null,
+    //   isXBRL: !!Number(r.isXBRL), isInlineXBRL: !!Number(r.isInlineXBRL),
+    //   acceptanceDateTime: r.acceptanceDateTime, reportDate: r.reportDate,
+    //   act: r.act, filmNumber: r.filmNumber, items: r.items, core_type: r.core_type
+    // }));
+   
+    // ---- Offerings (columnar → rows) with selected/renamed columns
+    function formatDateOnly(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+    }
+
+    const offSrc = columnarToRows(data?.offerings || {}, { idKey: "row" });
+
+    // sort newest first by raw ISO filingDate (before formatting)
+    offSrc.sort((a, b) => (b.filingDate || "").localeCompare(a.filingDate || ""));
+
+    // map to display keys in the exact order/labels you want
+    const offeringRows = offSrc.map(r => ({
+      "Filing Date": r.filingDate || "",
+      "Form Type": r.form || "",
+      "Accession Number": r.accessionNumber || "",
+      "File Number": r.fileNumber || "",
+      "Primary Document": r.primaryDocument || "",
+      "Description": r.primaryDocDescription || "",
+      "Acceptance Date": formatDateOnly(r.acceptanceDateTime),
+      "Report Date": r.reportDate || ""
+    }));
+
+    const offeringCols = [
+      "Filing Date",
+      "Form Type",
+      "Accession Number",
+      "File Number",
+      "Primary Document",
+      "Description",
+      "Acceptance Date",
+      "Report Date"
+    ];
+
+    renderTable(document.getElementById("tbl-offerings"), offeringRows, offeringCols);
+
+    // Wick days (columnar by timestamp) → rows, prefer provided Date
+    const wickRaw = columnarToRows(data?.wick_days || {}, { idKey: "ts" });
+    const wickRows = wickRaw.map(r => ({
+      Date: r["Date"] || r.ts,
+      Open: r["Open"], High: r["High"], Low: r["Low"], Close: r["Close"],
+      Volume: r["Volume"], Color: r["Color"],
+      Type: r["Types"], Price_of_Interest: r["Price_of_Interest"],
+      Dividends: r["Dividends"], Stock_Splits: r["Stock Splits"]
+    })).sort((a,b) => (a.Date > b.Date ? 1 : -1));
+    renderTable(
+      elWick,
+      wickRows,
+      ["Date","Open","High","Low","Close","Volume","Color","Type","Price_of_Interest","Dividends","Stock_Splits"]
+    );
+
+    // Gap days (columnar) → rows
+    const gapRows = columnarToRows(data?.gap_days || {}, { idKey: "row" }).map(r => ({
+      start_date: r.start_date, end_date: r.end_date, type: r.type,
+      color: r.color, price_gap: r.price_gap, retracement_price: r.retracement_price
+    }));
+    renderTable(elGap, gapRows, ["start_date","end_date","type","color","price_gap","retracement_price"]);
+  }
+
+
+
+  /**
+   * Search Functionality
+   */
+ const ticker = document.getElementById("ticker")
+ const form = document.getElementById("ticker_value")
+
+ form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    let headers = new Headers()
+
+    headers.append('Content-Type', 'application/json')
+    headers.append('Accept', 'application/json')  
+    //headers.append('Access-Control-Allow-Headers', 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token')
+    headers.append('OPTIONS', 'POST')
+    let searchInput = document.getElementById("ticker_search").value
+    let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
+
+    try{
+
+      const response = await fetch(url, {
+        headers: headers, 
+        method: 'POST'
+      });    
+      ticker.textContent = searchInput
+      console.log("Hello! ", searchInput)
+
+      if (!response.ok) 
+        throw new Error('HTTP ${response.status}')
+      
+      let resp = await response.json()
+      const data = parsePayload(resp); // handles the { body: "<json>" } shape
+      renderAll(data);
+    }
+    catch(err){
+      console.error(err)
+    }
+
+  }
+ )
+
+// HERE IS A CLEAN FIRST TRY VERSION OF CODE
+//  form.addEventListener("submit", function(e){
+//     e.preventDefault()
+//     let headers = new Headers()
+
+//     headers.append('Content-Type', 'application/json')
+//     headers.append('Accept', 'application/json')  
+//     //headers.append('Access-Control-Allow-Headers', 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token')
+//     headers.append('OPTIONS', 'POST')
+//     let searchInput = document.getElementById("ticker_search").value
+//     let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
+
+//     const response = await fetch(url, {
+//       headers: headers, 
+//       method: 'POST'
+//     });    
+//     ticker.textContent = searchInput
+//     console.log("Hello! ", searchInput)
+//   }
+//  )
+// END OF CLEAN FIRST TRY VERSION
+
+
+//  form.addEventListener("submit", function(e){
+//     e.preventDefault()
+//     let headers = new Headers()
+
+//     headers.append('Content-Type', 'application/json')
+//     headers.append('Accept', 'application/json')  
+//     //headers.append('Access-Control-Allow-Headers', 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token')
+//     headers.append('OPTIONS', 'POST')
+//     let searchInput = document.getElementById("ticker_search").value
+//     let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
+
+//     fetch(url, {
+//       headers: headers, 
+//       method: 'POST'
+//     }).then(response => response.json())
+//     .then(data => {
+//       let body = JSON.parse(data['body'])
+//       let float_data = body['float_data']
+//       let offerings = body['offerings']
+//       let wick_days = JSON.stringify(body['wick_days'])
+//       let gap_days = body['gap_days']
+
+
+//       let wd_json = JSON.parse(wick_days)
+//       console.log(float_data)
+//       console.log(offerings)
+//       console.log(wd_json)
+//       console.log(gap_days)
+
+//       let table = document.getElementById('wick_days')
+
+//       for(var key in wd_json){
+//         if(wd_json.hasOwnProperty(key)){
+//           console.log(wd_json[key])
+//         }
+//       }
+
+//       for(let i = 0; i < Object.keys(wd_json).length; ++i){
+//         for(var key in wd_json[i]){
+//           console.log(wd_json(key))
+//         }
+
+//         let row = `<tr> 
+//                         <td>${wd_json[i]}</td>
+//                    </tr>`
+//         table.innerHTML += row
+//       }
+//     })
+
+//     ticker.textContent = searchInput
+//     console.log("Hello! ", searchInput)
+//  });
+
+
   /**
    * Navbar links active state on scroll
    */
