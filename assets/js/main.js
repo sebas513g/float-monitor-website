@@ -201,8 +201,8 @@
     //headers.append('Access-Control-Allow-Headers', 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token')
     headers.append('OPTIONS', 'POST')
     let searchInput = document.getElementById("ticker_search").value
-    let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
-
+    //let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
+    let url = "https://4d0rge2n2c.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
     try{
 
       const response = await fetch(url, {
