@@ -198,16 +198,18 @@
 
     headers.append('Content-Type', 'application/json')
     headers.append('Accept', 'application/json')  
+    //headers.append('Access-Control-Allow-Origin', '*')  
     //headers.append('Access-Control-Allow-Headers', 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token')
-    headers.append('OPTIONS', 'POST')
+    //headers.append('OPTIONS', 'GET')
+    //headers.append('GET')
     let searchInput = document.getElementById("ticker_search").value
-    //let url = "https://zk23ibi8il.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
-    let url = "https://4d0rge2n2c.execute-api.us-east-1.amazonaws.com/DEV/?ticker=" + searchInput
+
+    let url = "https://vp1sw2jhg9.execute-api.us-east-1.amazonaws.com/Prod/hello/?ticker=" + searchInput
     try{
 
       const response = await fetch(url, {
         headers: headers, 
-        method: 'POST'
+        method: 'GET'
       });    
       ticker.textContent = searchInput
       console.log("Hello! ", searchInput)
